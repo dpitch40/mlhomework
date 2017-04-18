@@ -1,0 +1,126 @@
+Intro
+    High quality, personalized recommendations are the holy grail for online stores--e.g. Amazon
+    Also iTunes, Netflix
+    Helps direct users through a vast sea of products to the ones they might be interested in and maybe didn't know of--a substitute for salespeople
+    Recommendations help online stores solve the problem of discovery
+    How?
+        Online stores have lots of data--what users bought, browsed, clicked, rated, etc.
+        Recommendation systems take this data and predict which products a user might like or buy with something else
+    Tasks
+        Filter relevant products
+            Content-based filtering: "Similar" to the ones the user liked
+                Match by attributes, descriptive characteristics, or content
+            Collaborative filtering: Liked by "similar" users
+            Association rules: Purchased along with ones the user liked
+        Predict what rating the user would give a product
+        Predict whether a user would buy a product
+        Rank products based on their relevance to user
+Content-based filtering
+    Normally used with text: books, articles, etc.
+    Products represented by attributes/descriptors: Genre, words used, author
+    User profile created similarly: User's history or stated preference
+    The choice of attributes is a key challenge
+        Can use NLP for text documents
+        Often need to be collected manually
+    Recommendation engines that use content-based filtering alone are uncommon
+    Most successful example for music is the Music Genome Product, owned by Pandora
+        Each song is represented by a vactor of ~450 "genes"
+        Trained musical analysis score each song on these 450 attributes--takes 30-30 minutes per song!
+Collaborative filtering
+    Doesn't use any descriptive data about the product at all
+        A general term for a ML algorithm that relies only on user behavior
+    Instead, looks for similarities in preferences between users and projects them out
+        Normally predicts user ratings for products they haven't rated, or whether a user will buy a product
+    "Rating" is a general term
+        Explicit ratings
+        Implicit ratings: clicks, buys, searches, views, etc.
+    Nearest neighbor based
+        Finds users most similar to a user in terms of some similarity/distance metric, as in KNN
+        Find the K nearest neighbors of a user and take a weighted average of their rating
+        Users who give the same ratings for a bunch of products are considered to be similar to each other
+        Represent users with vectors of ratings for products
+        Can use a variety of distance metrics
+            Euclidean distance
+            Cosine similarity: Divides the dot product of two vectors by their distance to find the cosine of the angle between them
+            Pearson correlation: Cosine similarity, but first apply a normalization process (normalize by the user's average rating)
+                Handles the fact that users can be biased in their ratings, rating products high or low
+        Once you have the set of nearest users, predict the user's rating for a product as:
+            The active user's average rating for all products, plus the sum for all nearby users of that user's rating for the product minus their average rating for all products, times the similarity coefficient between this user and the active user, all divided by the sum of the similarity coefficients for all nearby users
+            The similarity coefficient is based on the distance between two users
+            This makes the predicted rating the weighted average of the ratrings of the nearby users
+        Predict the "top picks" for a user by predicting ratings for products the user has not seen and pick the top N
+        Called memory-based methods, because they involve memory-intensive computations over the entire user ratings database
+            A serious challenge for scalability, but can be parallelized
+            Successfully used by Amazon
+        Can be based on items rather than users: Find the weighted average rating of the K nearest neighbors of the item which the user has rated
+    Latent factor based
+        Newer, but has become the primary way to perform recommendations in many companies
+        Tries to simulate content-based filtering by inferring hidden factors based on user ratings that influence these ratings
+            These factors can be correlated with real attributes or their might be abstract and undescribable
+            Uses user history like CBF, but does not rely on explicitly defined factors
+        How?
+            Uses linear algebra--recall the concept of a matrix R of ratings with a user on each row and a product on each column--dimensions (u x p)
+            Then, express this matrix as the product of two other matrices
+                P: User-factor matrix; columns are users and rows are factors; dimensions are (u x f)
+                Q: Product-factor matrix; rows are factors and columns are products; dimensions are (f x p)
+                Describes users' interest in the factors and their relative presence in products
+        This is called matrix factorization--invented and popularized by the Netflix prize winners
+            Objective is to decompose each user rating into a user-factor vector and a product-factor vector
+        Analogous to singular value decomposition or principal component analysis
+            However, these techniques are only mathematically possible if you knew all the ratings for all the users for all products and you were just looking for latent factors to explain them--but then our problem would be solved
+            Also, SVD of huge matrices is computationally intensive
+        How do you perform matrix factorization when a matrix has missing entries?
+            Only solve for the ratings which are available
+            Each rating has to be decomposd into two vectors: Rab = Pa . Qb
+            You can write this equation for each rating by each user
+            Solve this set of equations and use the calculated Pa and Qb vectors to find the rating of any user for any product
+        Finding these sets of vectors can be set up asd an optimization problem
+            Find the set of user-factor and factor-item vectors which minimize the error on the training data set
+            Also add a regularization term to the error expression to penalize models with more factors--λ times the sum of the squares of the magnitudes of the factors vectors
+        Standard optimization techniques to solve this
+            Stochastic gradient descent
+                Hill-climbing heuristic: initialize some initial p and q vectors, find the current value and derivative of the error function, then follow the slope downward to modify the vectors until you reach a minimum
+                Might only be a local minimum
+            Alternating least squares
+                Set the error equation to 0 and solve for one of the two vectors individually, holding the other fixed
+                Then fix the value of this variable to the result and solve for the other one
+                Keep alternating until the p and q vectors converge
+    Challenges
+        Cold start--Dealing with products or users with no history
+            Content-boosted collaborative filtering; combines with content-based filtering to augment collaborative filtering
+        Synonymy--Dealing with duplicate products
+            May not be able to discriminate between similar products that should be rated the same: different editions of a book
+            Latent factor-based collaborative filtering works well to identify synonyms
+        Shilling--Users trying to manipulate the rating system
+            Taking precautions against these makes the recommendation system more robust
+            Could be similar to spam detection, only for users or ratings
+            Like Amazon requiring users to submit write-ups with ratings?
+        Data sparsity--What do you do when your rating data is very sparse?
+            Huge number of products and users, but few products rated by few users
+            Can use dimensionality reduction to reduce the sparsity of the matrix
+        Grey sheep--Users whose rating behavior isn't consistent
+            Pure collaborative filtering doesn't work for these users
+Association rules
+    Market basket analysis: What items are normally bought by the same user at the same time, or close to the same time?
+    The Apriori algorithm is the best-known technique for mining association rules
+        Helps mine basket data for association rules
+        "Basket": Items bought in one transaction or by a user over a short period of time
+    Each rule has to satisfy some rules:
+        Support: A minimal proportion of baskets containing the items in the rule
+            Specifies the minimum number of samples for a rule to be statistically significant
+        Confidence: Proportion of baskets which contain the items on both sides of the rule, compared to the left side alone
+            Tells us how strong the association is
+            Conf(A->B) = Sup(B) / Sup(A)
+    The goal is to find all rules satisying both constraints
+        Apriori does this in an efficient way without generating all possible rules, starting with 2-item rules, then 3-item rules and so on
+    Procedure
+        Find all the single-item sets with sufficient support
+        Find all possible 2-item sets from these with minimum support
+            (i.e. the pair of items appears together in at least X% of baskets)
+        Calculate all possible rules from these which have sufficient confidence
+        Add these rules to the list of "learned" rules and move on
+        Now find all possible 3-elements sets from the filtered set of 2-element sets with sufficient support, and move on
+        Keep going until you can't make any more sets
+    One key challenge is when there are too few item sets which satisfy the minimum support: might lead to missing out on strong associations due to lack of support
+Building Recommendation Systems with Pandas
+    Movielens(!)--Online dataset of movie ratings

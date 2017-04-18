@@ -1,0 +1,149 @@
+Intro to Decision Trees
+    In a ML problem, some factors may be more important than others and worth checking first
+        Allows for short-circuit evaluation; otherwise, look at the next factor
+        This hierarchy of factors is a decision tree
+    Decision trees
+        Input variables can be categorical or continuous
+        Output variables can also be categorical (classification) or continuous (regression)
+        The "leaves" of the tree are the outcomes or labels
+        The "branches" are the combinations of predictor values that lead to a particular outcome
+        Usually doesn't give a deterministic outcome, but the conditional probability of each outcome
+        Decision tree learning is the process of creating a decision tree model from training data (supervised learning)
+Decision Tree Learning
+    Training data consists of (feature vector, label) tuples
+        If a predictor is continuous, the tree also tells us the ranges which are important to the decision (i.e. if x > y, take one branch, otherwise take the other)
+    Technique: recursive partitioning
+        Continuously split the training data into subsets based on the input variables
+        Each split is based on one attribute of the training data
+        Greedy algorithm for this
+            Out of all the attributes we have available, choose the most significant one, i.e. the one that most helps us make a decision
+                e.g. if the presence of a feature is strongly correlated with a certain label, check for this feature first in the tree and if present, say the label is very likely
+                The attribute that creates the best split is the one that creates mostly homogeneous subsets; i.e. each side is mostly one label
+            Divide our training data into subsets on this attribute
+                Then perform the process recursively with each subset on other attributes in order of significance
+            Continue until we reach a stopping condition
+                The stopping condition could be all of our subsets being mostly homogeneous
+                Or we run out of attributes, or the tree reaches a certain size
+            When splitting on a continuous variable, how do we choose the best point to split?
+                Look for the point where the probability distribution graphs seem to cross--where the data on both sides is mostly homogeneous, with one label or another
+                The best split is the point where both subsets the split creates would be mostly homogeneous
+    Algorithms
+        Differ on how they measure the homogeneity of a subset
+        ID3--Information gain
+            Only supports categorical variables
+        C4.5--Information gain
+            Categorical and continuous
+        CART (classification and regression trees)--Minimizing GINI impurity
+            Idea behind GINI impurity is simple: Choose the attribute such that if you were to stop the decision tree and assign labels based on highest probability right now, the probability of a mislabeled instance (GINI impurity) is minimized
+        CHAID (chi-squared automatic interaction detector)--Statistical significance
+            Checks if any of the attributes/variables are correlated; if they are, merges them into one variable
+            Does a statistical significance test before splitting
+    Information gain
+        Goal: reduce entropy and maximize information
+        Information in the context of a certain problem; does it help us make a decision at all, or is it unrelated to the problem
+        There is a mathematical way to measure how much information an attribute gives us
+        Example: guessing a card with yes/no questions
+            52 possible outcomes initially
+            "Is the card an Ace?" narrows down the outcomes a lot of yes, very little if no, i.e. one answer gives us much more information than the other (but is less probable)
+        Information
+            In general, the lower the probability of something occurring, the more information we get when it occurs
+            Information content of (X = yes) = -Log(P(X = yes))
+                Increases as the probability decreases towards 0
+        Entropy
+            If X is a random variable, the entropy is the average (expected) value of the information content of that variable
+            Increases with number of possible answers and the evenness of the distribution
+        We want to maximize the entropy drop (and information gain) from determining an attribute; we put these attributes higher on the decision tree
+            The information gain is maximized when the subsets formed are homogeneous
+        Biased to choose attributes with more levels, since this means more entropy in their selection
+    Risk of overfitting
+        If we aren't careful, can end up with a tree so large and specific it is 100$ accurate on training data but doesn't handle new instances well
+        Part of decision tree learning is "pruning" the tree after training it: replacing some of the decision tree nodes with leaves
+            Removes nodes/subtrees whose deletion has a minimal (or positive) effect on the accuracy of the prediction
+            Also makes the tree more computationally efficient
+Exercise: Titanic
+    Given a passenger on the Titanic and their characteristics, predict if the passenger survived the sinking
+        A challenge set by Kaggle--online data science community
+Overfitting
+    It's really not an exaggeration that Overfitting ML models directly contributed to causing the 2007 financial crisis
+        Developing models with recent market data and testing them on that same market data created overfitting
+        Developers were strongly incentivized by hedge fund managers to develop models that explain past market trends very well, without worrying about their ability to predict the future
+    Overfitting is a huge challenge in machine learning
+        Simpler models can be more accurate at predicting than more complex models that perfectly fit training data--they generalize better
+            Overfitted models pick up on random noise in the training data and treat it as a pattern to fit
+            The training data is only part of a much larger data set; we might make a model that explains the training data well but not the rest of the data set
+        According to the bias-variance tradeoff, avoiding overfitting (variance) can lead instead to underfitting (bias)
+            More data beats "cleverer" models; a simple model trained on more data is better than a complex model trained on less data
+            Simple is better, especially when data is scarce
+    Cross-validation
+        A technique for model selection
+        Picking a good model
+            Generalizes well; performs well on data it has not seen before
+            Does not overfit
+        To test the performance of a model, use multiple training data sets so we can make a model that performs well across sets, and keep some data aside for testing
+        Procesure
+            Randomly divide the training data set into equal parts: D0, D1, D2...
+            Set aside one part to test the model, then train it with the other parts to; the best model is the one with the best average performance when tested on all subsets
+        Notes
+            A common choice for k (the number of subsets) is 10
+            Depends on the size of the training data set; choose k such that the subsets are not too small
+        Other variants
+            Leave 1 out--use each point individually for testing
+            Leave p out--Similar, but use p points at a time until every combination of p points has been picked
+                Similar to k-fold cross-validation, but every point is used for testing multiple times in different sets of p
+            Monte Carlo--Split the training set randomly into training and test data; no restriction on number of points in the test data or guaratee that each point will be used at least once
+        Applications--comparing different models
+            Choosing between different algorithms
+            Choosing the parameters of an algorithm
+            To identify the features of a model that are relevant
+    Regularization
+        Penalizes models that are too complex
+            Complexity measures may include branches in a decision tree, order of the polynomial used to represent a curve
+            Models tned to get more accurate at they get more complex, plateau out, then start decreasing in accuracy due to overfitting; there is a high point where the model is most accurate
+        Finding a model usually involves minimizing an error function
+            Call this function E(f); a regularization term is added to this function:
+                E'(f) = E(f) + λR(f)
+                R(f) is the regularization term which increases with complexity
+                Try to minimize this new error function
+        Application to linear regression: adjusted R-squared
+            Adjusts for how many independent variables have been used in the model
+    Ensemble learning
+        Involves the use of multiple learners and combining their results
+        Combining multiple models tends to average out their errors due to overfitting
+        Procedure
+            Take the training data set and train each of the models in your ensemble with it
+            When a new instance comes in, take the prediction from each model, and take the majority vote
+        Types of ensembles: The models in an ensemble can be...
+            Based on different techniques
+            Trained on different training sets
+            Using different features
+            Using different values of parameters
+        Combining the ensemble results
+            A majority vote
+            Average of the result from each model
+            A weighted function of the result from individual models
+        Ensemble learning techniques
+            Bagging (bootstrap-aggregating)
+                Developed for classification problems
+                Each model in the ensemble is trained on a different data sets, randmly generated from the original set
+                    Using a process called bootstrap sampling--uniform sampling with replacement
+                        Uniform: equal chance of choosing each instance
+                        With replacement: instances can be chosen multiple times
+                Combines the results by majority vote
+            Boosting
+                An algorithm for iteratively adding learners to the ensemble
+                    In each iteration, the training data set is chosen by giving more weight to the misclassified samples
+                Each individual model will be weak, but the theory of boosting holds that an ensemble of weak learners can together be very strong
+                Adaboost (adaptive boost) is a well-known boosting algorithm
+                    Weights samples more if they are misclassified by more weak learners
+            Stacking (stack generalization or blending)
+                Uses a machine learning approach to combine the results of ensemble members
+                Train another learner to combine the results from models, e.g. by logistic regression
+Random forests
+    A random forest is basically an ensemble of decision trees
+    Each individual decision tree is prone to overfitting, so each tree in the ensemble is:
+        Trained on different training data sets (i.e. bagging)
+        Using different features
+            Each decision tree is given a different, randomly-chosen subset of features to learn from
+            Can use to determine which features and important and which or not; the features used by decision trees that predict better are likely more important
+            Means you don't need as much domain knowledge
+    Combines the trees' decisions by majority vote

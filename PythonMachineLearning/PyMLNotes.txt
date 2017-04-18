@@ -1,0 +1,273 @@
+Intro: classification (spam detection)
+    A feature vector should contain all the features of a problem instance that we are interested in and need to use to classify the problem instance
+    The categories we are classifying into are caleld labels
+Machine learning overview
+    Types of machine learning problems
+        Classifications
+            Same basic setup: we have a population to be divided into a number of categories
+            We have a set of instances (training data) for which the correct label is already known
+            Then, given a new problem instance, classify it based on patterns in the training data
+            An algorithm that implements classification is called a classifier
+                e.g. Naive Bayes, K-nearest neighbors, and support vector machines
+            Is a form of supervised learning
+        Clustering
+            Given a set of instances, divide those instances into clusters so that instances i neach cluster are more similar to each other than to instances in other clusters
+            Closely related to classification, but focuses on categorizing instances you already have, not classifying new instances
+                Can be a precursor to classification
+            A form of unsupervised learning
+            Clustering techniques
+                K-means
+                Hierarchical
+                Density-based
+                Distribution-based clustering
+        Association detection
+            e.g. targeted recommendations on Amazon
+            People who buy X are more likely to buy Y
+        Anomaly detection
+            Example: detecting anomalous (hacker) traffic on a network
+            Intrusion detction system
+            Can also be considered a classification or clustering problem
+        Dimensionality reduction
+            Any rich representation of a complex instance requires a lot of features, which gives a vector with huge dimensionality, which is computationally and conceptually difficult to handle
+            A way to effectively reduce the number of dimensions of a problem, without losing important information
+    Types of ML methods
+        Naive Bayes
+        K-nearest neighbors
+        Support vector machines
+        Neural networks
+        Decision trees
+        Linear/logistic regression
+    Applications
+        Spam detection
+        Topic modeling
+        Sentiment analysis
+        Recommendations
+        Genre classification
+        Quant trading
+        Speech recognition
+        Computer vision
+        Handwriting analysis
+Classification
+    Naive Bayes Classifier
+        Fraud detection
+            Example: How to identify fraudulent transactions on a lost or stolen credit card?
+            Can be framed as a 2-label classification problem
+            Need to pick features of these transactions to work with
+                Amount spent
+                IP address
+                Number of failed attempts
+                Time since last transaction
+                Location of transaction
+                Each transaction can be represented as a list of these features, i.e. the feature vector
+                    Each of these variables' values cannot be determined beforehand
+                    However, we can treat them as random variables
+        Random variables
+            Examples
+                Temperature
+                Length of a tweet
+                Number of leaves on a tree
+                Person's blood type
+                Distance between a person's ears
+                Number of times a user visits Facebook in a day
+            Definition
+                A variable whose value is subject to variations due to chance
+                Can be discrete, continuous, or categorical
+        Bayes' theorem
+            The conditional probability of an event A given that B has occurred is written P(A|B)
+            Calculated P(A|B) = P(A ^ B) / P(B)
+                ^ = intersection
+                Joint probability of both events happening, divided by the probability of B happening
+            Probability trees
+            MECE = Mutually exclusive and completely exhausive, e.g. A and ~A
+            P(A) is called the a priori probability
+            P(A|B) is called the a posteriori probability--takes more information into account
+            Bayes' theorem can also be written P(A|B) = P(B|A) * P(A) / P(B)
+                Derived from P(A ^ B) = P(A|B) * P(B) = P(B|A) * P(A)
+            In words, a posteriori probability (P(A|B)) = likelihood (P(B|A)) * a priori (P(A)) / evidence (P(B))
+                When comparing two a posteriori probabilities P(A|B) and P(C|B), the denominators are the same, and we can simply compare the numerators
+                This is exploited by the Naive Bayes Classifier
+                    Given a problem instance, it computes a posteriori probabilities for each category it is trying to assign the problem instance into
+        Naive Bayes Classifier
+            Example: Classifiying fruits--apples or bananas
+                Features are length, breadth, and color
+                Training data set consists of the measurements of a large number of correctly classified fruits
+                This is a binary classification problem
+            The Bayes classifier needs to know the probability distributions of its features, which we get from the training data
+            Given a new problem instance (i.e. fruit), compute the probability it is an apple or a banana given its measurements
+                For an apple: P(f is Apple) * product of P(measurement | f is apple) for each measurement
+                We don't take any joint probabilities--we assume each variable is independent
+    K-Nearest Neighbors (KNN)
+        This, SVM, and artificial neural networks all rely on representing problem instances as points in N-dimensional space
+        Not probabilistic like Naive Bayes; does not assume features are independent (non-parametric)
+        Complications
+            Which distance metric to use?
+                Euclidean?
+                    Not always suitable
+                    Often modified to down-weight the importance of further points
+                    Only works for continuous variables; for discrete or categorical,we have to use edit or hamming distance or something
+            Choice of k: parameter selection
+                k = 1 (AKA nearest neighbor) is a special case
+                Large values help reduce the effect of outliers, but also increase the chance we will pull in instances of the wrong category
+            Dimensionality reduction
+                Dimensionality = the length of the feature vectors we use
+                Not only slower to have more dimensions, but it can be harder to differentiate between points in a high-dimensionality space
+                Feature extraction is used to pick out relevant features of a problem instance
+                Can also use a hash function to map items to a lower dimensional space
+                    Locality hashing: treat nearby points as similar
+            How to use in prediction?
+                KNN is most naturally used for classification--can it be used for prediction too?
+                We can just as easily use the method to "predict" the value of a function for a problem instance
+                    Calculate the function for each of the K nearest neighbors and use the average as our prediction
+            Data reduction
+                Trimming the number of data points when possible will improve computational efficiency
+                3 categories of data points
+                    Prototypes: represent the training data particularly well
+                    Class outliers: points in the training data not correctly classified using the selected prototypes
+                    Absorbed points: points in the training data that are correctly classified using the prototypes
+                Data reduction keeps the prototypes, drops the absorbed points, and selectively keeps some class outliers
+    Support vector machines (SVM)
+        Also maps problem instances to N-dimensional feature vectors
+        Only works for building binary classifiers
+        Make their decision on the basis of a linear function of a point's coordinates, i.e. a N-1-dimensional hyperplane neatly dividing the two categories
+            If this function is > 0 for a given point, put it in category 1, otherwise, category 2
+            Finding this function is key to a SVM approach
+        Also non-parametric; makes no assumptions about the probability distributions of the features
+        In summary: supervised, linear, non-probabilistic, binary
+        More on hyperplanes
+            There will be many planes that separate the categories--SVM picks the plane based on the distance of the points in the training data from the hyperplane
+            Distance of a point from a plane Ax + By + Cz = D in 3-D space: (Ax1 + By1 + Cz1 - D)/(A^2 + B^2 + C^2)^1/2
+                As measured along a line perpendicular to the plane
+            The SVM finds the "best" plane by choosing the one that maximizes the sum of the distances from the nearest points to the plane, while ensuring the plane neatly divides the categories
+                This becomes an optimization problem, which can be converted into a quadratic programming problem for which standard solutions exist
+            This solution is called the maximum margin hyperplane
+                The name "support vector machines" refers to the nearest points on each side of the hyperplane--these are the support vectors
+        Problem: what if the points are not linearly separable?
+            The soft margin method can find the hyperplane that performs as "clean" a separation as possible--minimizes the number of misclassified points, and lets us measure the extent of the misclassification
+            What if you wanted a nonlinear function that separates the two classes of points?
+                A way to use SVM to do this: the kernel trick
+                Transform the feature vectors into a higher-dimensional space
+                The kernel trick allows SVMs to do their thing in very high dimensional spaces
+                The linear classification setup requires us to calculate dot products in very high dimensions, which is computationally intensive
+                A kernel is a non-linear function that replaces the dot product of two vectors, letting classification occur without doing element-wise operations on two vectors
+                    Operates in a much higher-dimensional space than the original feature space
+                Transform points into a space where linear separation is possible
+Clustering
+    Overview
+        A prototypical example of unsupervised learning
+        Given a set of instances, divide those instances into clusters so instances in a cluster are more similar to each other than to instances in other clusters
+        Again need to represent problem instances with feature vectors, so they can be seen in "clusters" in N-dimensional space
+        Closely related to classification, but use cases are different--classification seeks to classify single instances, whereas clustering looks for the overall shape of a data set
+            We don't know the groups we are trying to classify into beforehand; we make no assumptions about the data
+            Can chain them: decide the categories using clustering, then classify new instances into them
+    Algorithms
+        K-means
+            Requires specifying the number of clusters beforehand
+            Choose centroids (how?), then construct 3 clusters around them
+            This is done iteratively: pick three initial centroids, assign the points around them to the cluster with the nearest mean, then choose new centroids for each cluster and repeat until the centroids stop moving
+            Danger of arriving at a false minimum if we initialize the means poorly
+            Convergence is not guaranteed; need to pick a maximum number of iterations
+        Hierarchical
+            Divisive (top-down) hierarchical clustering
+                Start with one cluster, then seek to divide this cluster into subclusters, then to divide those clusters, and so on until each instance is a cluster
+                Create a hierarchy of clusters, like the taxonomic tree for animals
+                Key to implementation is having a similarity function: we want instances in the same cluster to be similar and in different clusters to be different
+                We split clusters to decrease the average distance in each subcluster
+                Need a stopping condition: it isn't useful to make each instance a cluster
+            Vs. agglomerative (bottom-up), which expands the tree outward from instances
+        Density-based
+            Relies on the idea that points in clusters are densely-concentrated, and the density drops off between clusters
+            Scans the data and looks for drops in point density, and marks it as a cluster boundary, then assigns points to clusters within the boundaries
+                Points with too few neighbors are classified as outliers, not in any cluster
+            Most prominent is DBSCAN (density-based spatial clustering of applications with noise)
+                Takes two parameters:
+                    Epsilon (radius around each point the algorithm will scan for neighbors)
+                    Minimum number of points (number of neighbors a point has to have to be classified as part of a cluster)
+        Distribution-based
+            If we know for each point which probability distribution function it was most likely drawn from, we can make each distribution a cluster and assign points to the distribution they were most likely drawn from
+Association detection
+    For example, people who purchase X on Amazon are also likely to purchase Y
+    "Lift" of a rule: Lift(X -> Y) = ratio of proportion of transactionss with both X and Y / (proportion of transactions with X * proportion of transactions with Y)
+        People are [lift] times more likely to purchase X and Y together than they are to purchase them independently
+        Machine learning approach involves efficiently finding a large number of these rules
+    Subjects rules to tests of conviction: how likely is this rule to be wrong?
+        Using the idea of "support"--our level of certainty about the rule
+Dimensionality reduction
+    Review of the "curse of dimensionality" working with hundreds or thousands of dimensions is computationally very intensive and inefficient
+    Feature extraction: boil problem instances down into simpler ones
+        Re-express the data in a lower dimensionality
+        Example: principle component analysis (PCA)
+        Given a large number of correlated time series, finds 2-3 underlying causes that explain most of the movements
+    Feature selection: filter through features of an instance and keep the necessary ones
+        Example: stepwise regression
+            Selectively add only features that improve the quality of the regression
+    More on principal component analysis
+        Find the principal components of a feature vector by performing an orthogonal transformation (i.e. a rotation), then express the data in terms of the principle components
+            Perform the transformation so the first principal component has the largest possible variance, so it conveys the most information
+            The next component should be orthogonal to the first and have the next greatest variance
+                Orthogonality expressed by a dot product
+            The principal components become the new axes of the data
+        There can be as many principal components as original dimensions in the data, but we can often get away with fewer
+            Ideally, the data will be "flat" with respect to some of the new axes; these components don't give us any useful information and can be discarded
+        Can be improved with a technique called singular value decomposition (SVD)
+Artificial neural networks
+    Overview
+        Another machine learning approach to classification
+        Loosely inspired by the human nervous system, but has had a hard time living up to the hype
+    Example: Perceptron
+        A prototypical example of an artificial neural network
+            In its implementation in the 50s--algorithm itself is very rudimentary and looks like other statistical techniques today
+        Similar to support vector machines and other techniques--but less sophisticated
+            Binary classifier
+        A specific algorithm for determining a hyperplane that separates two categories of data
+            Doesn't care which hyperplane specifically; doesn't try to optimize it like the SVM does
+        Uses "online learning"--consumes one data point of the training data at a time
+            Given two initial data points, the perceptron finds A hyperplane that separates the points
+            As more data points come in, moves this hyperplane so it still divides the categories
+            Moves in a such a way that iteration error is minimized
+            Converges in a finite number of steps only if the data is linearly separable
+Regression as a form of supervised learning
+    Used to predict the value of a continuous variable at some point in the future
+        Example: demand forecasting; predicting sales in the future based on current market conditions
+        Inputs like sales at the same time last year, pricing discounts you have planned, important events coming up...
+        We need a function that describes the relationship between these inputs and the output (sales), which can be made with regression
+    Concerned with modeling relationships between variables
+        Input variables are called independent variables (xn) or predictors
+        Output variables are called dependent variables (y)
+        Tries to find a function that computes the predicted value of y given some inputs, by looking at some known input, output pairs
+        Tries to minimize the error of the function yp = F(x1, x2, x3, ... xn)
+        A form of supervised learning
+        Important to understand the probability distribution of y for managing the error from yp
+    Linear regression
+        Assumes the data has a linear relationship: a n-dimensional plane describes the data
+        Y = β0 + β1x + ε (ε = error)
+        Given a set of (x, y) tuples, tries to find a line that best fits the values
+        Ordinary least squares method: Finds the optimal line by minimizing the sum of the squares of the residuals
+        Simple linear regression with one input variable, multilinear regression with multiple values
+        Only works if the error is normally distributed
+    Logistic regression
+        Used when the dependent variable is categorical
+            Predictors can be continuous or categorical
+            For example, age/gender -> admitted/not admitted to college
+        Given the dependent variables, predicts the probability of each outcome
+        Works as a classifier: can assign each instance to the outcome with the highest probability
+        Probability of one outcome given by P = e^(a + bX) / (1 + e^(a + bX))
+            Finds the coefficients a and b
+            This equation produces a logistic curve with range 0 to 1
+        Still a linear classifier; the decision being made is still made based on a linear function
+Bias variance trade-off
+    All supervised learning techniques produce a model (inferred function) through a training phase
+    A good model captures all the patterns in the training data and correctly computs the output value for a new instance
+        This is measured by how accurately the model predicts/classifies on the training data
+        Models will rarely be 100% accurate for the training data, even for classifiers
+        A good model is one which tries to minimize error on the training data
+            Should be able to generalize from the training data
+        The more complex the model, the better it can represent the training data
+            But there is a balance: a too-complex model will pick up random variations in the training data and consider them to be representative of real patterns (overfitting)
+            On the other hand, a less sophisticated model will not pick up all the meaningful patterns in the training data (underfitting)
+            Generally impossible to minimize both these types of errors: this is the bias-variance tradeoff
+            Sophisticated ML suites come with a way to tweak this balance to fit your needs
+    Given a new input instance, there are two different types of errors that can occur
+        If an algorithm gives different outputs for the same input with similar but non-identical training data sets, it has high variance error
+            Produces a model too specific to the training data--overfitting
+        If it systematically produces the same wrong value for each training data set, it has high bias error
+            Failed to understand the patterns in the training data--underfitting

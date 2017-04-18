@@ -1,0 +1,66 @@
+Computer Vision
+    The science of teaching computers to "see"
+    Process information from images or video and make decisions based on it
+    Applications
+        Handwriting recognition
+            e.g. Handwriting digit recognition for bank check processing
+            Can be seen as a classification problem with ten categories
+            New approaches are checked against existing databases of handwritten digits, like MNist--has 60000 images of digits by 500 different writers
+        Object recognition
+        Face detection/recognition
+        Self-driving cars!
+    Handwritten digit recommendation procedure
+        Represent each image in the training set as a feature vector
+            In this case, use a pixel approach to turn the image into a vector
+            Each pixel is effectively an (x, y) tuple, with a color/lightness value (0...1)--use greyscale
+            A greyscale image can reduce to a 2-D array
+            This array can be used directly as a feature vector, but many images will be too big--need to perform dimensionality reduction/feature extraction
+                Examples: Find and use only the edges, shrink the image
+                Unsupervised feature learning: Let an algorithm learn to identify relevant features without human intevrention
+                One simple method (multi-zoning): divide the image into a number of equal-size zones and count the number of black pixels in each
+        Feed all the feature vectors in the training data along with their labels to a classification algorithm
+            Support vector machines won't work normally--it is binary, and we have 10 classes
+                Can modify it with an approach called "one vs. all"--find a hyperplane that separates each category from all the others, for a total of N-1 hyperplanes
+                Use all these hyperplanes in combination to find which digit it is
+            A recently popular choice is deep learning networks
+                The "network" refers to an artificial neural network--the input is fed to a network which processes it and produces an output
+                Inside the network are layers--subcomponents
+                The output of one layer becomes the input to the next
+                "Deep" refers to the fact that there are many layers in the network
+    Perceptron as a network
+        Each input in the feature vector is represented by a node in the network
+        Each input is multiplied by some weight and fed into the output node, which processes them somehow to produce the final output
+        In a Perceptron, this function a threshold function--it outputs 1 if the weighted sum of the inputs is greater than some threshold, else 0
+        This is equivalent to checking which side of the hyperplane the point lies on
+        When training the algorithm, you have the inputs and the outputs, and the task is to find the correct weights
+            Uses online learning for this
+        Issues
+            How to apply this binary classification algorithm to handwriting recognition?
+            What if the data set is not linearly separable?
+            Building on the idea of a Perceptron lets us construct networks that solve both these problems
+    Deep learning networks
+        A Perceptron is the simplest artificial neural network--deep learning networks build on it
+        Each before, each input is represented by a feature vector; each input is multiplied by a weight and fed to a node
+            A node is a function that combines inputs in a particular way
+        But in a deep learning network there can be multiple nodes
+            Each node takes in some inputs multiplied by a different set of weights
+        Now repeat the process with the intermediate nodes, whose outputs are multiplied by new sets of weights and fed to another layer of nodes
+            The layers between the input and output are called "hidden layers"; there can be any number of these
+        Can be multiple outputs--each output represents a separate opinion on the problem obtained by interpreting the input in a different way
+        If every node in the previous layer is connected to a layer, it is called a "dense layer"
+            A too-dense network may result in overfitting
+            To avoid overfitting, we may feed only some inputs from one layer to the next layer--this is called "dropout"
+            Can set a percentage dropout--a random number of edges that should be dropped (i.e. weighted 0)
+            The objective in training is to "learn" the values of these weights
+        Training process
+            In the MNist database, each image is 28x28 greyscale; can be represented with a tuple of 784 numbers
+                The first layer of the network thus has 784 input nodes
+                Each layer can have any number of nodes--can even have more than the previous layer
+                Output layer has to have 10 nodes--1 for each digit between 0 to 9
+                Each output node is the likelihood that the image represents that digit
+                The digit with the maximum probability is the predicted output
+                Lots of fine-tuning in the number of nodes in each layer, the function for each node, percentage dropout
+            Finding the weights
+                First, initialize some random weights, and find the output for every image in the training set
+                Based on the error for these images, adjust the weights by a small amount
+                Repeat until the error is minimized, or for a set number of iterations

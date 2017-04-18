@@ -1,0 +1,68 @@
+Intro
+    Sentiment analysis/opinion mining--tries to extract subjective information from text
+        e.g. Is text positive/negative
+            Simplest
+        What rating is this review; how positive/negative is it?
+Rule-based approaches
+    Possible rule-based approach: Classify certain words as positive/negative ("like", "hate", "good", "awful", etc.) and count the number of words in each category in a text
+        Doesn't work because of the complexity of language: can't handle sarcasm, negation, indirect speech, etc.
+        Also doesn't account for intensity of sentiment
+    Nonetheless, some rule-based approaches are complex and good at classifying well
+        For example VADER (Valence Aware Dictionary and sEntiment Reasoner): a module in nltk
+            Performs well against some machine-learning approaches
+            Accounts for use of caps, exclamation points, and emoticons
+            Words that signal a shift in emotion--"but", "however", "etc."
+            Intensifying/blunting adverbs
+            May not work in some contexts, like Twitterspeak
+        Procedure
+            Came up with rules by having 10 human raters to independently rate over 9000 words, idioms, emoticons, etc.
+            Also took 800 tweets and had 2 raters mark each as positive or negative
+            Did lots of qualitative analysis to discover rules that correspond well to a positive or negative classification
+        Requires time and resources, domain knowledge, and lots of testing
+            But remains static, and cannot update to changes in usage
+Machine learning reduces sentiment analysis to a classification problem
+    Procedure
+        Supervised--needs training data: a text with a sentiment label
+        Convert these training data instances as a feature vector; convert it to numbers
+            Can make the entries of the vector 1 or 0 based on the presence or absence of words
+        Train the model
+            Naive Bayes and SVM are commonly used for sentiment analysis
+            Also maximum entropy classifier
+        Run the model
+    Can adjust to new data
+    What do you use as training data?
+        Need texts or documents already marked as positive or negative
+        Several such corpora exist
+        Also implicit labels, like ratings for reviews or a customer Email in the context of a survey--these texts are self-annotated
+    What features do you choose?
+        Simplest way is to look at the words in the document
+            "Bag of words" approach--ignores the order of the words
+        Naive Bayes
+            P(Document is positive|Words) = P(Document is positive) * P(Word1|Document is positive) * P(Word2|Document is positive) ... / (P(Word1) * P(Word2) ...)
+            Denominators are the same, so we can just compare the numerators
+        SVM
+            Express each document as a vector (based on the presence/absence or count of certain words)
+            Can also weight words based on their positivity or negativity, using a lexicon--several of these available online
+        Details
+            Need to consider negations, modifiers--n-grams of words
+            Can construct your feature vector based on the presence or absence of n-grams instead of individual words
+Sentiment Lexicons
+    A resource with meanings of words
+        Necessary in sentiment analysis to help us classify words
+        Tells us the sentiment of a word, its intensity, etc.
+        Useful in both rule-based and machine learning-based approaches
+        Often created by university researchers
+    Famous lexicons
+        General Inquirer
+        MPQA
+        LIWC
+        SentiWordNet--based on WordNet
+            WordNet is like a special thesaurus--consists of (word, meaning) pairs, or lemmas, to account for words with multiple meanings
+                Example: "dog.n.01"--gives the word, part of speech, and a reference to the meaning
+                A "synset" groups together lemmas with the same meaning
+                WordNet also provides relationships between synsets--multiple types, like "type-of", "has-member", "entails"
+                SentiWordNet takes the synsets in WordNet and assigns them a polarity score
+                    Positive score, negative score, and objectivity score
+                    These scores must add up to 1
+Twitter Sentiment Analysis in Python
+    Access the Twitter API using the python-twitter module

@@ -1,0 +1,225 @@
+SQL syntax
+    CREATE TABLE
+    PERSON
+    (
+        ID INTEGER PRIMARY KEY,
+        FIRSTNAME VARCHAR,
+        LASTNAME VARCHAR
+    )
+
+    Table schema: Column names, column types, constraints
+    Constraints
+        NOT NULL (value cannot be missing/null)
+        PRIMARY KEY (Uniquely identifies each row in the table; can be one or multiple columns)
+            Implied NOT NULL
+            Used to index rows, via a hash of the primary key
+        UNIQUE (like PRIMARY KEY, but can be repeated for multiple columns)
+        REFERENCES (relationship constraint with another table column)
+            Every value in this column must exist in a column of another column
+
+    SELECT
+    FIRSTNAME, LASTNAME
+    FROM PERSON
+    WHERE ID < 10
+
+    SELECT p.stock_ticker, c.ceo_name, max(p.closing_price), min(p.closing_price), count(p.trading_date)
+    FROM prices p, company_info c
+    WHERE p.stock_ticker = c.stock_ticker AND p.trading_date like '%2015%'
+    GROUP BY p.stock_ticker
+    HAVING max(p.closing_price) < 0.01
+
+    HAVING filters rows after applying grouping and aggregation functions
+
+    INSERT INTO
+    PERSON
+    (ID, FIRSTNAME, LASTNAME)
+    VALUES
+    (1, 'David', 'Pitchford')
+
+    UPDATE
+    PERSON
+    SET FIRSTNAME = 'Tuntun'
+    WHERE FIRSTNAME = 'David'
+
+    If a foreign key constraint depends on the updated column, the constraint inanother table might be violated, depending on how the constraint is set up
+
+    ON UPDATE/DELETE CASCADE - When a change is made in one column, update/delete data in dependent columns in other tables as well
+    ON UPDATE/DELETE SET NULL
+    ON UPDATE/DELETE RESTRICT
+
+    DELETE FROM
+    PERSON
+    WHERE
+    FIRSTNAME = 'David'
+
+    TRUNCATE TABLE PERSON -- deletes all rows
+
+    Deletion can also impact foreign key constraints
+
+    ALTER TABLE
+    PERSON
+    ADD COLUMN
+    DATE_OF_BIRTH VARCHAR(10)
+
+    What happens to existing rows? By default, their value in this column is set to null
+
+    ALTER TABLE PERSON DROP COLUMN DATE_OF_BIRTH
+
+    Delete an entire table: DROP TABLE PERSON
+
+    Can't delete columns/tables until dependent constraints have been deleted first
+Interacting with databases in Python
+    Import a database library, e.g. sqlite3
+        Different packages for other DBMS
+    Connect to the database
+    Get cursor (like a session) for that connection
+    Run SQL commands over the cursor
+    Have to commit any writes made to the database before closing the connection
+        Committing satisfies ACID properties--Atomicity, consistency, isolation, durability
+            Atomicity--A group of actions is all-or-nothing
+Objects
+    Destructors: Called automatically before an object is destroyed
+        __del__ method
+Natural Language Processing
+    Understanding and generating human language
+    Applications
+        Auto-summarization of text
+        Spelling correction
+        Text classification
+            Sentiment analysis (e.g. positive or negative)
+        Topical analysis
+        Information retrieval/search
+        Automated essay scoring
+        Machine translation
+        Auto-generating natural language text; make reports seem like they were written by a human
+    Common sub-problems
+        Breaking a piece of text down into words and sentences (tokenization)
+        Identifying which part of speech a word is (parts-of-speech tagging)
+        Identifying commonly occurring words or groups of words (frequency counting, n-grams)
+        Filtering out common words (stopword removal)
+        Understanding the context in which a word occurs (word sense disambiguation)
+        Reducing a word to its base form (stemming)
+    Natural language toolkit (nltk)--a Python toolkit for NLP
+        Comes with corpora of text to use for training, and lexical resources
+    Using nltk
+        Looking up context of a text
+            concordance()--displays occurrences of a word in context
+            similar()--returns a list of words that occur in similar contexts
+            common_contexts()--returns contexts shared by two words
+            dispersion_plot()--prints a plot of all the occurrences of a word relative to the beginning of a text
+        Processing text
+            sent_tokenize(), word_tokenize()--tokenize text into lists of sentences or words
+            stopwords.words()--get a list of stopwords
+            bigrams(), ngrams()--generate all possible contiguous pairs or n-groups of words in a piece of text
+            collocations()--find most commonly occurring bigrams
+Web scraping with BeautifulSoup
+    Problem: simply downloading web pages also loads lots of HTML tags and other elements that are not part of the text itself
+    BeautifulSoup makes scraping and parsing text from the web simple and elegant
+    Can tell it to find all the text enclosed in specific tags
+
+    heapq module--nlargest
+Machine learning
+    Application: spam detection
+        One way: rule-based approach (i.e. algorithmic)
+            Requires lots of time and domain knowledge to figure out a good set of rules, and there will still be holes
+            Blacklisting, whitelisting
+            Problem: the rules are static; keeping them updated is cumbersome, and it will be hard to stay up to date with the behavior of savvy spammers
+            Hard to apply user feedback
+        An alternative: let users help tell us which Emails are spam
+            Figure out patterns in the kinds, of Emails explicitly marked as spam by users, and check if new Emails conform to them or not
+            Uses Emails explicitly marked as spam/ham as a corpus against which to classify new Emails
+            The machine learning approach can dynamically evolve based on feedback
+    Basic setup of a machine learning classifier
+        Bayes' theorem is the foundation of machine learning techniques
+        Use the corpus to calculate a measure of the "spamminess" of an Email
+        The more often a word appears in a spam Email, the more likely a new Email containing that word is spam
+        For each word in each Email in the corpus, calculate how many times it appears in spam vs. ham Emails
+            Determine the "spamminess" with the formula S(T) = Cspam(T) / (Cspam(T) + Cham(T))
+            C(T) = count of T in that corpus
+            Proportion of times the word appears in a spam Email
+        Running the measure: Look up the "spamminess" of each word in the Email and find the total "spamminess" of the whole measure, e.g. by multiplying the spamminess of each word
+            Also compute the hamminess similarly
+            If spamminess > hamminess, mark the Email as spam, else as ham
+        Two distinct phases: analyzing the corpus to calculate a "spamminess" dictionary, then applying it to new Emails
+            First phase is "training the model", second phase is "running the model"
+            This approach is known as supervised learning, i.e. it has a preexisting corpus of example data with prespecified answers
+            Alternately, try to group Emails into two groups and identify one as spam; that would be unsupervised learning
+        The problem of how to decide how some entity should be classified based on a preexisting corpus is a classic use case of machine learning
+        Terminology
+            The approach we just saw is called a naive Bayes classifier
+                "Naive" means the method assumes the feature values (spamminess of each word) are independent of each other
+            The entities we are seeking to classify are called problem instances
+            A problem instance is called a vector of feature values
+            The classes we are sorting problem instances into are called labels
+    Alternate methods
+        Background
+            Represent an Email as a point in an N-dimensional space
+                Recall each problem instance is a vector of feature values
+                For Emails, convert them into a tuple of 1's and 0's, one for each word in a list of words that can appear in an Email; each element is 1 if that element is present in the Email, and 0 if not
+            Do this for all Emails we have in our training data, and Emails we want to classify (problem instances); map them all to N-dimensional vectors
+                We can now find the distances between these vectors
+                Many possible distance formulae; the Euclidean formula is the simplest
+                The closer a point is to a spam Email, the more likely it is spam
+        K nearest neighbors
+            Find the k nearest neighbors of a problem instance in the "feature space"; if more than a certain proportion of them are spam, mark it as spam
+            In real life, the feature vector is not a tuple of 1's and 0's; you will use an algorithm that "hashes" subsets of the problem instance
+            Will also use a more sophisticated distance formula than Euclidean
+            Also a supervised learning method
+            Makes no assumptions about the probability distributions of the feature vectors; a non-parametric classifier
+            In contrast, Naive bayes assumes the feature vectors are independent, and is called probabilistic
+        Support vector machines
+            Also a supervised learning model
+            Used to build non-probabilistic classifiers
+            Only works when we have two labels
+            Also represents problem instances as N-dimensional points
+            But tries to separate spam and ham points by finding a N-1-dimensional hyperplane that neatly separates the two sets of labels in the space
+            Points are classified based on which side of this hyperplane they fall on
+    Application: classifying newspaper articles as technical or non-technical
+        Using K nearest neighbors
+        To create the training data set, download all the technical articles from the New York Times and the Washington Post and label them as "tech", and download all the sports articles and label them as "non-tech"
+        Represent each article as a vector of the 25 most important words in an article
+            (Found using NLP)
+        Distance between an article is calculated using the number of words they have in common
+        Find the five nearest neighbors of a problem instance and use them to assign a label
+        Excursus: Sentiment analysis
+            Given a piece of text, is the sentiment positive or negative?
+            Can be viewed as a classification problem
+        requests module--"HTTP for humans", http://docs.python-requests.org/en/master/
+        Using Bayes:
+            Techiness = P(Article is tech/Words in article)
+    sklearn--built on numpy/scipy
+    Document distance using TF-IDF/search engine
+        Consider how search engines work: A user types a query string, and the search engine returns a list of sites that are relevant to that query
+        The search engine maintains an index of websites, and finds the documents in this index that are the most similar to the query
+        How
+            Take the set of all words appearing in the corpus: W1, W2, ... Wn
+            A document in the corpus will contain some subset of these words; translate it into a n-dimensional vector where 1 represents the presence and 0 represents the absence of the corresponding word
+            Use these vectors to calculate how similar a document is to a query
+            Also represent the user query as a n-dimensional vector
+            The similarity of two documents is the distance between them
+                Multiple ways to do this, most basic is Euclidean
+            This approach won't yet let us find the "most relevant" documents to a query
+                This only really lets us eliminate documents which don't contain words in our query
+                Documents that contain all the words in the query will seem very close, and it's hard to differentiate between them
+                We need to weight documents according to how often words in the search query appear in the document
+        This is where TF-IDF (Term Frequency-Inverse Document Frequency) comes in
+            These refer to weights we can attach to each of the words in a document, i.e. each element in our feature vector
+            Term frequency refers to how often the word appears in the document; if a word appears more often, it will be weighted more heavily
+                Give a higher weight to words appearing more often in the document
+            Inverse document frequency refers to the inverse of how often the word appears in the entire corpus
+                This helps ignore words that are common in most documents
+                Give a higher weight to rarer words that don't appear in many documents
+            Instead of ones and zeros, the feature vector will now be a list of the weights of the words in the document
+        Cosine similarity--Another alternate similarity measure
+            Another way to compute similarity is to use the angle between two vectors corresponding to two documents
+            Use the dot product--a . b = |a| * |b| * cos(θ)
+    Application: Creating clusters of "similar articles" within a corpus of articles from one blog
+        (Try this on my blog?)
+        Download all articles from the blog, use k-means to identify five clusters of articles
+            (Why five?)
+            Use TF-IDF to represent each article as a vector of weights
+        Initialize a set of means (centroids of the five clusters to be found)
+        Assign each document/article to its nearest mean
+        Once this is done, compute the centroids of the clusters found and make them the new means
+        K-means will converge when the means stop changing, or after a certain number of iterations
+        The scikit-learn package lets us do this

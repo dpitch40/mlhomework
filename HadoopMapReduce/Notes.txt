@@ -1,0 +1,396 @@
+Intro to big data
+    Computing architecture
+        Storing large amounts of data for analysis on a single drive is impractical--I/O speed becomes a limiting factor, as does disk size
+        Distributing the data on multiple servers overcomes both limitations
+            Time to read the data is divided by the number of servers, and the available disc space is multiplied by it
+            Also, since each disc has only a small amount of the data, we can process it with smaller, cheaper processes
+    Hadoop is a distributed computing framework developed and maintained by Apache, written in Java
+        Two subcomponents:
+            HDFS--A file system to handle distributed data
+            MapReduce--A framework to process data across multiple servers
+            An open source implementation of two proprietary technologies by Google: GFS and MapReduce?, originally built to power Google Search
+            In 2014 the MapReduce component was split into two parts
+                YARN--A framework to run the data processing task
+                MapReduce--A framework to define the data processing task
+        Hadoop subcomponents in detail
+            HDFS (Hadoop Distributed File System)
+                Normally deployed on a group (cluster) of machines, each called a node
+                    One node acts as the master (name) node and manages the file system
+                    Stores the directory system and metadata for all the files
+                    Other nodes act as data nodes and physically story the data
+                Storing a (large) file with HDFS
+                    The file is broken into 128 MB blocks--this size is chosen to minimize seek time
+                    These blocks are then stored across the nodes
+                    The name node keeps track of the file metadata; which blocks for each file are stored on which data nodes
+                    A file is read using the metadata in the name node and the blocks in the data node
+                Troubleshooting
+                    What if a block gets corrupted or a node crashes?
+                    A key challenge for distributed computing
+                    You can define a replication factor: defines how many times each block is replicated and stored on different data nodes
+                    The replica/master locations are all stored in the name node
+            MapReduce
+                You have a file stored in blocks across numerous nodes; now you want to perform some computation on the file
+                    Option 1: Reconstruct the complete file on 1 node and process the file there
+                        Relatively simple to write, but does not take advantage of Hadoop's parallelism
+                    Option 2: Process each block in the node it is stored on
+                        Then combine all the results on one node
+                        Distributes the computation and minimizes I/O and network delays
+                        This is the approach taken by MapReduce
+                Stages of MapReduce
+                    Map: Process each block in the node it is stored in
+                    Reduce: Take all the results and combine them all in one node to return to the caller
+                Managing resources and memory across multiple nodes gets very complicated
+                    What if a node goes down or encounters an exception? What if it runs out of memory? How do you recover from these things?
+                    MapReduce abstracts the programmer from these complications, allowing them to focus on the job to be done
+                        Just define 2 functions: map() and reduce()
+                        The rest is taken care of by Hadoop
+            YARN (Yet Another Resource Negotiator)
+                Introduced in Hadoop 2.0 to separately handle the management of resources on the Hadoop cluster
+                Coordinates the MapReduce tasks running on the cluster
+                Monitors for failures and assigns new nodes when others fail
+                A sort of bridge between MapReduce and HDFS
+            How the components communicate
+                User defines map and reduce tasks using the MapReduce API
+                A job is triggered on the cluster
+                YARN figures out where and how to run the job and stores the job in HDFS
+        Installing Hadoop
+            On Linux/Unix based system
+                Requires a Linux simulator to run on Windows
+            Normally runs on a large number of cheap/commodity machines: makes sense to use open-source operating systems
+            Three installation modes; 2 for simulation and testing, 1 for production
+                Standalone
+                    Runs on a single node, i.e. your local machine
+                    Uses local file system instead of HDFS, and MapReduce runs on a single JVM
+                    YARN and HDFS are not used or needed in this mode
+                    Good for initial prototyping of your job
+                    Cannot be used as a proxy for a real cluster; not distributed
+                Pseudo-distributed
+                    Simulation of a Hadoop cluster
+                    2 nodes both running locally on 2 different JVMs: one as the name node, and one as the data node
+                    Uses simulations of YARN and HDFS
+                    Suitable for a sandbox environment
+                Fully distributed
+                    The real production mode for running on many machines
+                    Hadoop needs to be installed on each machine in your cluster
+                    These can be machines in your own data center or rented servers from services like AWS or Azure
+                    Saves you the trouble of setting up and managing a cluster yourself
+                    Enterprise editions of Hadoop make managing clusters easier
+            Inside the Hadoop distribution
+                Shell scripts in /sbin
+                Settings XMl files in /etc/hadoop
+                    Four main XMl cfg files; also hidden default versions
+                    hadoop-env.sh shell script sets environment variables
+                Formatting the namenode
+                    In the directory that holds the HDFs data on the local disk, sets up files for the name node
+                    Directory is /tmp/hadoop-<username>
+The MapReduce "hello world"
+    The basic philosophy of MapReduce
+        Distributed computing can get complicated--managing resources and memory across nodes
+            MapReduce abstracts these complications from the programmer--just define map() and reduce()
+            Any problem can be parallelized if it can be expressed in this way:
+                Start with a set of (key, value) pairs
+                Map each pair to a new result pair
+                Reduce all pairs with the same key down to one result pair by combining them somehow
+            Can even chair multiple map/reduce transformations
+            This insight was what drove the creation of MapReduce by Google in the early '00s
+                Inspired by Lisp, i.e. functional programming
+    Example: Create a frequency distribution of words in a (very) large text file
+        So the output is effectively a (word, count) mapping
+        Reminder: the text file haspairs been divided into blocks and stored in HDFS, each block representing a part of the text file
+        MapReduce data flow
+            Text file is broken into blocks, and then into (lineNum, line) key-value pairs
+            The map step translates each each line of a block to a list of (word, count) pairs
+            This output is copied over to one node (wouldn't this be even clunkier than processing the whole file on one node? Why not merge on each node first?) and an operation called sort/merge is run
+            Sort/merge combines the key-value pairs from all nodes into one list of pairs where each key maps to a list of all the values that were mapped by that key
+            That list is then given to the reduce function to be combined into one value for that key
+        The map function is chosen such that it can run in parallel on all nodes
+    MapReduce programs are normally written in Java, though Hadoop has a streaming API that lets you use Ruby or Python
+        The choice of map and reduce functions you want to run is called a job or driver
+    Implementation details
+        The map() function is implemented in a class that extends the Mapper base class
+            Mapper is a generic base class with four type parameters: input/output key/value type
+            Can also override other methods, like setup(), cleanup(), and run()
+        The reduce() function is implemented in a class that extends the Reducer base class
+            Also a generic class with the same four type parameters; same options for overriding
+        The output types of the Mapper should match the input types of the Reducer!
+        These two classes are used by a Job class which is configured in the main, top-level class
+            This Job class has some parameters: input and output filepaths, and the Mapper and Reducer classes to run, and the output data types (need to match the output types of the chosen Reducer class)
+        All these defined classes are put in a JAR (Java archive) file which contains the Hadoop JARS as wel, which gets distributed to all the nodes where the computation is run
+    The Mapper class--details
+        Hadoop has its own set of basic types, optimized for network serialization
+            Wrappers around Java primitive types
+            IntWritable--Java int
+            LongWritable--Java long
+            Text--Java string
+                Convert to Java String with toString() method
+        The map() function of the mapper takes three inputs--the key, the value, and a context object of type Context
+            The context object stores the output of map() and is accessed by the rest of the MapReduce system
+            With context.write(key, value);
+    The Reducer class details
+        reduce() function accepts a key, an Iterable of values, and a context
+        Writes (key, value) result pairs to the context like map()
+    The main (driver) class
+        Run with two command line arguments: an input file and an output directory (which does not exist)
+        hadoop jar <JARpath> <mainclass> <inputFile> <outputDir>
+        Input types for text files are done automatically--translated to (line number, line text) pairs
+    See here: http://hadoop.apache.org/docs/current/hadoop-mapreduce-client/hadoop-mapreduce-client-core/MapReduceTutorial.html
+        Can specify a combiner class which works like a reducer, but locally on each node before the actual reducer
+More about HDFS
+    The command "hadoop fs" shows a list of file operations you can do in HDFS--similar to Linux file operations
+        Any Unix-style command you use in HDFS has to be preceded by "hadoop fs -", i.e. given as an option with a hyphen
+        e.g. "hadoop fs -mkdir /test"
+        -ls--Shows the replication count of each file
+        -cat--View the contents of a text file
+        -chmod, -chown
+    Transferring data across file systems
+        hadoop fs -copyfromlocal <localfilepath> <hdfspath>
+            -put is a synonym
+            -cp copies files within hdfs
+        hadoop fs -copytolocal <hdfspath> <localfilepath>
+            -get is a synonym
+    Invoking hadoop
+        hadoop jar /path/to/jar.JAR full.java.package.path /input/file.txt /output/path/
+        Web interface for nodes at: 127.0.0.1:8088/cluster
+            Needs YARN to be running
+        HDFS at port 50070
+More Hadoop features
+    The Combiner
+        Recap: the outputs from the parallelized map phase are all copied to one node, which does a sort merge on it before feeding this to the reducer
+        The map operation is highly parallelized, but reduce is not, which is highly inefficient for a word counter like in the example
+            What if we could do some part of the reduce operation in parallel?
+            A combiner performs a mini-reduction on the output from each node in parallel, before sending the results to the reducer node
+        Effectively turns the map phase into a map/combine phase that gets fed into sort/merge and reduce
+            The combiner also inherits from the Reducer class
+            The same reducer can also be used as a combiner
+                This is not always the case--for example, in a data file on baseball players containing the player name, runs, and match number, calculating the average score you cannot average over each node to get sub-averages for the reducer to combine; the weights will be wrong
+                You would have to combine into player name -> (sub-average, number of games) tuples for the reducer to work on so it can apply the proper weighting
+        The combiner should have no impact on the final result itself, only the efficiency
+    Multiple reducers
+        The mappers and reducers are all processes launched by YARN
+        Number of mappers is usually controlled by YARN
+            Each mapper operates on one HDFS block
+            Number of mappers depends on the number of blocks your input is broken into
+                Can only be controlled by the user to a limited extent
+            Multiple mappers can be assigned to one data node
+        Number of reducers is user-controllable
+            The default is 1, but multiple reducers can also help parallelize the reduce task
+            Example: "-D mapred.reduce.tasks=2" argument
+                With multiple reducers, the output from each mapper is split into partitions; the number is equal to the number of reducers
+                All values with the same key must be assigned to the same partition; the output is assigned to a partition based on the key
+                Based on hash value of the key
+            Each mapper sends each partition to its corresponding reducer
+            Default partition logic is implemented in the getPartition() method of HashPartitioner
+                (key.hashCode() & (2 ^ 31 - 1)) % numReducers;
+                This can be overridden
+                Keys should be evenly distributed among partitions
+            The Shuffle/Sort operation combines the subresults produced by the reducers into one dict containing all the keys in the subdict
+    Streaming API
+        Gives other languages than Java a Hadoop interface
+            Lets you implement the map() and reduce() methods in any language (like Python!)
+            Uses standard I/O to communicate with your program
+            Hadoop sends the map input to the mapper function and gets an output back, then sends this to the reducerand gets the result back
+        Communication details
+            Input and output must be done via standard I/O--in Python, this means reading lines of input from sys.stdin and printing lines of output to sys.sydout
+            The mapper should send the keys and values back one per line, separated by a tab
+            The sorted output is not sent to the reducer in a sorted, but not merged form 
+            Both receive input as a stream
+        Specify the files to use when running the job
+            hadoop jar /path/to/jar.JAR full.java.package.path /input/file.txt /output/path/
+            -files <mapCodePath>,<reduceCodePath>
+                Will be copied to each slave node
+                Can also give the path to a combiner
+            -input <inputFilePath> -output <outputFilePath>
+                Same as before
+            -mapper "python <mapCodePath>" -combiner "python <reduceCodePath>" -reducer "python <reduceCodePath>"
+                Tell Hadoop how to call your mapper/reducer/combiner
+More about HDFS
+    Reminder: the underlying storage system used by Yarn and MapReduce
+    Replication
+        Necessary to avoid data loss if a data node crashes or gets corrupted
+        Replication factor defined in hdfs-site.xml
+        1 in pseudo-distributed or standalone mode; normally 3 in fully-distributed mode
+            This means each block is copied 3 times, i.e. it exists 4 times across various data nodes
+            Maximizes redundancy (chance of being able to recover a file) while minimizing write bandwidth
+                To maximize redundancy, the replicas of a block should be stored far apart, i.e. on different server racks
+                When replicating a file, a node is chosen to store the first copy, which forwards the data to the location chosen for the second replica, and so on
+                All this consumes network bandwidth--the more racks used to copy to, the more bandwidth used
+            In the default strategy, the first node is chosen at random, the second is on a different rack, and the third is on the same rack as the second but a different node--balances redundancy and bandwidth
+    The name node
+        The locations of each block and its replica(s) are all stored on the name node, as well as basic file metadata
+            Metadata and directory structure are stored on disk; block locations are stored in memory
+        What if the name node fails?
+            All the files are lost(!), because their block locations are lost and there is no way to reconstruct (i.e. find) them
+        Two defenses against this
+            Back up all the files that store filesystem metadata
+                Two files store the filesystem metadata:
+                fsimage--State of the file system at startup
+                    A snapshot loaded into memory; all changes to the system made in memory
+                edits--A log of all in-memory edits to the filesystem
+                These files together make up the current state of the system
+                    If the name node fails, the current file state can be reconstructed from these 2 files
+                    Usually backed up on the local filesystem of the name nodel; can also be backed up to a remote drive
+                    The backup location is specified in the property dfs.namenode.name.dir in hdfs-site.xml--comma-separated list of paths, preferably on different hosts
+                    Merging the fsimage and edits files is very time intensive; bringing a cluster back online could take a while
+            Secondary name node
+                Maintains a merged fsimage;
+                Periodically merges the fsimage and edits files and copies the result to the primary name node--this is called checkpointing
+                Can be made to take the place of the name node in case of failure
+                Can set the checkpoint frequency with the properties in hdfs-site.xml:
+                    dfs.namenode.checkpoint.period--seconds between each checkpoint
+                    dfs.namenode.checkpoint.txns--alternately, number of transactions (edits) allowed beteween checkpoints
+                    dfs.namenode.checkpoint.check.period--How often to query for the number of uncheckpointed transactions
+YARN (Yet Another Resource negotiator)
+    Introduced in Hadoop 2.0 to separately handle resource management in a Hadoop cluster
+        Coordinates MapReduce tasks running on the cluster
+        Also monitors for failures and assigns new nodes when others fail
+    Does this with two services
+        Resource manager
+            One per cluster
+            Runs on a single node--usually the name node
+            Launches tasks that are submitted to YARN
+            Arbitrates the available resources between applications
+            Has a pluggable scheduler which allows different scheduling policies to be used
+        Node manager
+            Runs on all the data nodes
+            Launches and monitors all tasks running on its host node
+                Monitors resources, logs--everything related to its node
+            Coordinates with the resource manager
+    Process
+        A job is submitted to YARN
+        First goes to the resource manager
+            Schedules the job based on the available capacity
+            Finds a node manager on one of the nodes to launch an application master process
+            The resource manager grants a "container"--the right for an application to use a specified amount of resources (memory/CPU)
+                The node manager actually allocates these resources
+                A node manager can manage many containers
+            The application master process:
+                Negotiates resources from the resource manager
+                Works with the node managers to execute and monitor containers
+                Specific to one application (i.e. distributed computing job)
+                Having this middle layer reduces bottlenecking
+                Prompts the resource manager to "spin up" more slave nodes
+            If there are no resources available on a node with data to be computed, YARN will wait for resources to free up, then shunt the computation to another node on the same rack
+    Scheduling policies
+        FIFO scheduler--resources are given to the first task in line until it is completed, then the next task gets it
+            Each task gets all the resources until it finishes
+            Can cause huge delays on a cluster shared by many applications, so rarely used
+        Capacity scheduler--Capacity is distributed to different queues
+            Each queue is allocated a share of the cluster resources
+            Jobs can be submitted to a specific queue
+            Each queue uses FIFO scheduling
+            Lets small jobs to complete without having to wait for large ones, like an express like
+            May result in cluster underutilization since capacity is reserved for queues
+        Fair scheduler--Resources are allocated propertionally to all jobs
+            No wait time
+            Each job gets 1/N of the total capacity, where N is the number of jobs running
+            When a new job is submitted, a share of all the other running jobs' resources are allocated to it
+            When a job finishes, its resources are reallocated evenly to the other jobs
+        Configuring the scheduling policy
+            Capacity scheduling is the default--this can be configured in yarn-site.xml
+                Set yarn.resourcemanager.scheduler.class to the appropriate scheduler class
+                This is org.apache.hadoop.yarn.server.resourcemanager.scheduler.fair.FairScheduler(!) for fair scheduling
+            Queue configurations for capacity scheduling can be set in capacity-scheduler.xml
+                Set the number of queues (default is 1)
+                    yarn.scheduler.capacity.root.queues can be a comma-separated list of queues names
+                    Then set the property yarn.scheduler.capacity.root.[queueName].capacity to the percentage of the total capacity that queue gets
+                    Can even set up a hierarchy of queues
+                    Set yarn.scheduler.capacity.root.[queueName].queues to make subqueues; keep adding the queue names into the property names after root to set their properties
+                When submitting a job, specify the queue with the arguments "-D mapred.job.queue.name=[queuePath]"
+                Queues should be configured based on the number of tasks/type of users
+                    Separate queues for daily runs vs. ad-hoc runs, data analysts vs. engineers, production jobs vs. test runs
+            Delay scheduling
+                Sometimes YARN gets a request with a location constraint--a particular node on which the computation must run, i.e. where the data is located
+                In capacity-scheduler.xml, there is a property called yarn.scheduler.capacity.node-locality-delay
+                    Delays scheduling of a local job if the node is not available; sets the number of missed opportunities before the job is run on a rack-local node
+                    This is good because waiting for the local node to become available is better than transferring the data to another node--this takes network bandwidth
+                On by default
+Setting up a Hadoop cluster
+    Manually (shudder!)
+        Need to install Hadoop on each slave machine in the same way as on the master
+        Master setup starts off the same as pseudo-distributed mode
+        Can clone Windows VMs to make the slave nodes, assuming Hadoop is working normally on the master
+        Slave setup
+            Change the hostname in /etc/hostname to "slave" on slave nodes (reboot for this change to take effect)
+            Change names in /etc/hosts--add localhost as "slave" and the IP address of master
+            Also edit /etc/network/interfaces to set the slave static IP to be different than the master IP
+            Generate a new RSA key for the slave
+            Edit yarn-site.xml to tell Hadoop the resource manager is on the master--edit.yarn.resourcemanager.hostname to the hostname of the master
+                Also do this on the master
+        Master setup
+            Add slave static IP(s)to /etc/hosts
+    Amazon Web Services (AWS)
+        First year is free, or until you reach a usage threshold
+        Interested in EC2 instances--Elastic Compute
+            On-the-go virtual machines at the demand of the user
+            Need to download the tools to use EC2 from the command line
+        Setup
+            Extract the command line tools into /ur/local/ec2, add this as a variable to .bashrc
+            Also set two variables as EC2 credientials--AWS_ACCESS_KEY and AWS_SECRET_KEY
+            Download a private key, point EC2_PRIVATE_KEY and EC2_CERT to it
+        ec2-describe-regions to test if EC2 is set up correctly
+            Make sure you can SSH to the slave without a password
+            Copy the slave key to the master using ssh-copy-id
+            Add names of slave machines to etc/hadoop/slaves
+    Cloudera Manager
+        A Hadoop Enterprise company--makes a packaged version of Hadoop that provides a manager that does the node/cluster management for you
+        Give it the IP addresses of the machines where Hadoop will be installed and it does the installation for you
+MapReduce customizations
+    Turning to the actual configuration of the MapReduce job itself
+    Two main ways to configure a MapReduce job
+    Command-line arguments
+        Helper classes: GenericOptionsParser, ToolRunner, and Tool
+        Normally only the input path and output directory are passed to your main class; have to customize to pass more arguments
+            By default the arguments are not passed on to the Job you set up(!?)
+        The main class should implement the Tool interface
+            The Tool is passed to ToolRunner.run()
+            This instantiates a GenericOptionsParser, which parses the command line arguments
+        Execution
+            add "extends Configured implements Tool"
+            Inherit from the Configured class (which implements the Configurable interface)
+            And implement the Tool interface (which ALSO implements the Configurable interface)
+            Put your job setup code in the run() method of the Tool object instead of the main() method
+                Needs to return an int for the system edit code
+                Then, in the main() static method, call ToolRunner.run(), passing it a new instance of our class and the command line arguments, and then System.exit with the return status
+                ToolRunner.run() is a static method in the ToolRunner class
+            Then, in the mapper/reducer, you can request the config parameters with config.get("argument.path")
+                Gets it as a string; needs to be parsed
+        http://hadoop.apache.org/docs/current/api/org/apache/hadoop/util/Tool.html
+    Customizing the Job object
+        Setup in our main class/method
+        Has many configuration options which can be set to a specific class
+        All have defaults
+        setInputFormatClass() and setOutputFormatClass()
+            Not normally set by the user
+            TextInput/OutputFormat.Class mean input is expected to be in Text files
+            Can be set to any class extending the InputFormat class
+                Sets how to break up the input file into InputSplits which will be processed into 1 mapper
+                Also reads the records in the input file and converts them to <key, value> pairs
+            The OutputFormat class does this in reverse
+        setMapperClass(), setCombinerClass(), setReducerClass()--have already seen these
+            Normally always set; if not set, they act like identity functions, returning the same <key, value> pairs they are given
+            The input to setMapperClass() should extend the Mapper class
+            setReducerClass() and setCombinerClass() shoud extend the Reducer class
+        setMapOutputKeyClass(), setMapOutputValueClass(), setOutputKeyClass(), setOutputValueClass()
+            Should all be set to a subclass of the WritableComparable class
+            Ensures that keys and values are serializable across the network (Writable interface) and comparable with each other so they can be sorted and merged (Comparable interface)
+            setOutput____Class() set output of Reducer; should be consistent with the Reducer's output types
+            setMapOutput____Class() sets output of Mapper; should match the Reducer's input types
+            Default assumes the Mapper and Reducer have the same output types
+        Classes that handle the intermediate operations between Map and reduce
+            Not normally set by the user
+            setPartitionerClass()
+                Recall: when there are multiple Reducers, the output from each Mapper/HDFS data block is split into one partition for each Reducer; there is a mapping function from keys to partitions
+                The Partitioner class implements this function
+                Default is the HashPartitioner class--assigns a partition based on the hash value of the key
+            setSortComparatorClass()
+                Two ways to sort keys in Hadoop:
+                Keys implement WritableComparable interface and Hadoop uses their compareTo method to sort them
+                Override the SortComparator to sort the keys
+                Should pass an instance of a WritableComparator class to the method
+                    Works on raw byte streams rather than deserialized objects; faster
+                If you use a custom WritableComparable without a WritableComparator, the compareTo() method is used
+            setGroupingComparatorClass()
+                Used to group together values with the same key; equality test
+                These groups are then passed to the Reducer as a <key, group of values> pair
+                Normally, a similar strategy to that of SortComparator is used to compare keys
+                Can call this method with a class that extends WritableComparator (again) to compare the serialized keys directly

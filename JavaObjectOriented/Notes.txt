@@ -1,0 +1,223 @@
+An object-oriented state of mind
+    A class is a combination of data and behavior that forms a logical component that can mimic real-world entities and interact with other classes
+    The most common programming paradigm used today
+    Terminology
+        Instantiation--Creating an object (instance) of a class
+    Setup/cleanup
+        files need to be opened and closed
+        Database connections need to be opened and closed, and their transactions committed
+        Constructors are automatically called when an object is created; finalizers when it is destroyed (i.e. automatically garbage collected)
+            new Person(); // calls the Person constructor
+            Constructors always have the same name as their parent class
+            More than one constructor possible within a class (with different interfaces)
+    Static variables and methods
+        Functions and variables specific to an instance of a class are called object variables/methods
+        Static methods belong to a class, not specific to any instance of that class (i.e. shared by all instances)
+        If one instance changes a static variable, it changes for all objects
+    Access modifiers
+        Set who can access a member variable or method of a class, or a class itself
+        Public--Anyone anywhere can access
+            Public variables can be accessed and modified by anyone
+            Public functions can be called by anyone
+            Public classes can be instantiated by anyone
+            Member variables generally shouldn't be marked as public
+                Member functions generally are; use getter and/or setter functions to grant access to a private variable on the class's terms
+                The final modifier can be used to keep outside code from modifying a public variable (but still usually not a good idea)
+                Granting outside access to the internal variables of an object breaks encapsulation; outside code can "break" the state of an object
+        Private--Can only be accessed by code in the class in which they are defined
+            Two objects of the same class can access each other's private functions and variables
+            Private to a class, not an instance
+            Subclasses can't access private members of their parent class(es)
+            Member variables are generally marked private; access is mediated by public getter/setter methods
+                Private member functions are less common
+        Protected--Can only be accessed by their class and its subclasses
+            Similar to private, but grants access to subclasses
+        Package private--Can be accessed from within its package/namespace
+            Does not have its own keyword--is the default if no access modifier is explicitly used
+            A Java package is a namespace organizing some Java classes into a logical component
+                Built into a JAR file
+                Can be treated as a single unit
+                "package [full.package.name];" at the start of a file to specify the package it belongs to
+            Any class outside the package can't access
+        Rules of thumb
+            Use private as the default unless you have a reason not to
+            Don't mark member variables public, maybe even if they are final
+Preliminary example
+    The top-level classname and filename must match
+    "this" keyword refers to the instance in which the function is running
+        Analogous to "self" in Python
+        Not actually always required, but used to disambiguate between local variables and class members with the same name if they collide
+Intro to inheritance
+    Child classes have copies of the member variables and functions of the parent class, which can be overridden
+    Reminder on polymorphism: functions can accept an instance of a superclass as an argument without caring which specific subclass it is
+    An interface of a class is the set of methods that drive its behavior
+        Child classes inherit the interface of their parent, but can implement it differently
+    The object base class
+        The root of the inheritance tree; all other classes inherit from it
+        Provides standard functionality to all classes; these functions can be overridden
+            .equals()--used to test objects for equality
+                Default implementation checks for reference equality, i.e. identity
+            .tostring()--Returns a string representation of the object
+                Useful for debugging
+            .finalize()--Destructor, for cleanup code
+        Never be shy to override member functions of the object class!
+    Interfaces
+        Have only function signatures, no implementations
+            The access modifier and return type are not part of the signature
+        A way of organizing and driving class behavior
+            All objects implementing an interface can be treated the same way--polymorphism
+            Variables can be declared as superclasses/interfaces above their "true" type
+            i.e. variables can hold objects whose type is below them in the hierarchy;this is called "upcasting"
+            For example, IShape myRect = new Rectangle(10, 20);
+        Multiple inheritance from classes is not allowed; multiple inheritance from interfaces is
+        A class may implement an interface--must implement every method in the interface
+            An interface is like a contract that implementing classes must adhere to
+    Abstract classes--marked abstract
+        May or may not contain abstract methods (also marked abstract)
+            Abstract methods are methods with no implementation, only the signature
+            Just like in an interface
+            e.g. "abstract void draw();"
+        Cannot be instantiated, but can be extended
+        Unlike an interface, can have methods with implementations
+            The presence of one or more abstract methods means the class can't be instantiated
+    Interfaces vs. abstract base classes--what is the difference?
+        Interfaces define behavior only, not implementation
+            Used to drive only behavior
+        An abstract base class works like any class, except it defines only the signature for at least one method
+            Used to drive functionality and behavior
+            Provides default functionality
+        A class implements an interface, but extends an abstract class
+            Hinting that it can incorporate the preexisting functionality of an abstract class
+        A class can implement any number of interfaces, but can extend only one base class
+        Interface methods are implicitly public by default; member variables are implicitly final by default
+            Because the interface defines only the public API
+    Interfaces in detail
+        Dynamic method dispatch--how Java figures out which version of an overridden method to call
+            Done at runtime
+            Methods that can be dynamically determined in this way are considered "virtual" methods
+            Non-virtual is the default in C++
+        The "final" keyword in a method definition marks the method as non-virtual, not to be overridden
+        if (someShape instanceof MyCircle)
+        {MyCircle someCircle = (MyCircle)someShape;}
+        Interface default methods!?
+            Suppose you need to add a new method to the interface--this would require adding it to every class that implements the interface; not good!
+            Or add a new interface extending the old one and add the new method to it, but then there will be two interfaces, and the objects will no longer be uniform
+            Thus the need for default interface methods
+            Use the "default" keyword in default method declarations
+Java languaage constructs
+    Exceptions
+        Thrown when something has gone wrong in the code
+        Come in a hierarchy classes; users can implement their own Exception subclasses
+        The exceptions a method can throw are part of its signature
+            e.g. public static void method() throws Exception {}
+        Handled by a try-catch block
+            A method must either catch possible exceptions or announce that it too might throw the exception
+            This is called the "chain of responsibility"
+        Can be thrown manually with something like 'throw new IOException("Exception message");'
+    Immutability of strings
+        Makes operations like equality checking fast, whereas string concatenation is slow
+            The common use of strings is to use them as constants
+            Flyweight pattern: Tries to share resources across objects by storing the resource (i.e. a string) in memory just once
+            For Java strings, this means they are immutable
+        Example: comparing strings
+            O(N) in C/C++ (and Python?)--have to step through the characters one by one until we find one that differs or reach the end
+            O(1) in Java--can just do an identity check
+                Because Java makes use of "string interning"--an optimization method for storing strings
+                Only stores one copy of each string value--altering a string creates a new, altered copy of the string object
+        Effects of string interning/immutability
+            Conserves memory and makes equality tests very fast, but makes string modification more time-consuming
+            Python, .NET, and Ruby also have immutable strings
+    Object identity/equality testing
+        Ways of checking object equality
+            Remember--all objects in Java implicitly inherit from the Object base class
+            This base class implements the .equals() method--override this to customize equality testing
+                By default, it checks for object identity--the same reference in memory
+        The '==' operator always checks for reference equality; you have to explicitly call .equals() to use the specially defined comparison behavior
+Generics
+    Lets you create a custom class using types as parameters, to customize the types of it works with
+        Avoids the repetition of defining similar classes that work with different types of objects
+        Or a general class that just works with "Objects" and requires manual casting
+            This approach is not type-safe; it circumvents the expectation that you manually specify types, and objects of the wrong type could make it into the structure
+    Create classes with template parameters instead of actual types, e.g. E, T
+    Collections in Java
+        These are all Java interfaces with a variety of implementations
+            "Collection<T>" is also a generic interface implemented by all other collections
+            "Collections" class has static member functions that work on all collections
+                Collections.sort, Collections.shuffle, Collections.min, Collections.reverse, Collections.max, Collections.rotate
+        List--ordered collection of values, like a Python list
+            Inherits from Collections (meaning it extends the interface without implementing it)
+            ArrayList is one prominent implementation; a List implemented using resizable arrays, a more flexible replacement for regular arrays
+            Also Stack--specialized for pushing onto and popping off of the top
+        Set--unordered collection of values with no duplicates, like a Python set
+            HashSet--Uses the hash of the elements to track unique elements in the set
+        Map--key-value mapping, like a Python dict
+            HashMap--hashes its keys, again like a Python dict
+    Collections are themselves generic; you use angle braces to specify the types they hold
+Nested classes--static and non-static
+    Java lets you define classes within other classes
+    Static nested classes
+        Define a public static class within an outer class
+        Used when an inner class defines a logical part of the outer class
+        Because they are static, objects of the nested class are not associated with any specific object of the outer class
+        Referred to as an attribute of their outer class, using dotted notation; "static" simply means they are referred to through the outer class, not instances of it
+        Constructor is invoked like a static method of the other class
+    Non-static nested classes
+        Same syntax to declare, but not static
+        Instantiated from an actual outer object--"OuterClass.InnerClass innerObject = outerObject.new InnerClass();"
+        Private member variables of the outer class can be accessed from the inner class
+        More rarely used
+    Anonymous inner classes--offshoot of non-static nested classes
+        All code in Java must be in a class, cannot just be floating around
+        Anonymous classes allow a quicker way to define classes for one-time use
+        The whole class is defined in one line as it is being constructed, after its parent class
+    Local classes--very rare
+        Defined in the body of a class method
+Packages and Jars
+    Java Archive (JAR)--A compressed library  containing the compiled Java bytecode of your project, designed to be imported by other programmers
+        .class files are single Java source code files, compiled into platform-independent bytecode
+        Command: "jar cf [OutName].jar [input (.class) file(s)]"
+        Use other coders' JAR files by placing them in your CLASSPATH (like the PYTHONPATH) and then import it like any other Java package
+        JAR files can also be marked as directly executable
+            Use the 'e' argument followed by the name of class whose main() method will be the entry point into the executable JAR
+        JAR files contain a manifest file with metadata
+            Can also be version controlled or sealed (all classes in the package must be contained in the same JAR)
+            Electronically signed; can set security attributes
+            Add a manifest with the 'm' argument and the path to a text file containing the metadata
+                This file should contain lines of the format "Property: Value"
+                e.g. "Main-Class: Package.MyClass"
+    Package
+        The first line in any Java source file specifies the package it belongs to
+            The name of a package is arbitrary; multiple levels separated by periods
+        A way of hierarchically organizing files into namespaces
+            Like a directory structure for classes
+        Can use wildcard notation to import all the classes in a package
+Object-oriented design principles
+    Rely on interfaces, not implementations
+        "Program to an interface, not an implementation" - Eric Gamma
+        Only consider the external interface a package exposes to the outside world; don't make assumptions about the guts of a logical unit
+        Forces you to write loosely-coupled code, so that the implementation can change freely without the interface changing (and without affecting anyone else's use of your code)
+        Example: use interfaces in your method signatures, not specific implementations of that interface; this makes them more general
+    The open/closed principle
+        "Classes should be open for extension but closed for modification"
+        You shouldn't be adding to a class when it's written, but rather extending it
+        Make your classes as complete as possible from the onset
+        Ways of extension
+            Inheritance ("is a")
+            Delegation--classes that fire events other classes can listen to
+                e.g. observer, MVC, chain of responsibility
+            Composition ("has a")
+                Take in member variables to determine behavior
+                e.g. the strategy pattern (https://en.wikipedia.org/wiki/Strategy_pattern)
+    Principle of least knowledge
+        "Only talk to friends, don't talk to strangers"--Demeter's Law
+        In any class you write, only make method calls to "friends"--other internal instance methods, objects passed in as parameters, objects created inside your class
+        In practice, code you write should not include multiple '.' operators in the same function call
+            Not absolute--can cause "interface bloat" as objects need to handle all the requests that might be directed to their "friend" objects
+    Dependency inversion
+        "Depend on abstractions, never on details"
+        Multiple implementations of an interface shouldn't have to reference each other
+            Implementations of higher and lower-level interfaces should reference the abstract interfaces, not each other
+    The Hollywood Principle
+        "Don't call us, we'll call you"
+        High-level modules should call low-level modules, not vice-versa
+        Use callbacks defined by the low-level module and called by the high-level module
